@@ -7,7 +7,6 @@
 
 #include "utf.h"
 
-#define	NULL	0
 #define	FNSIZE	128
 #define	LBSIZE	4096
 #define	BLKSIZE	4096
@@ -143,6 +142,7 @@ void	onintr(int);
 void	onquit(int);
 void	onhup(int);
 
+int
 main(int argc, char *argv[])
 {
 	char *p1, *p2;
@@ -190,9 +190,9 @@ main(int argc, char *argv[])
 	zero = (int*)malloc(nlall*sizeof(int));
 	tfname = tmpnam(0);
 	init();
-	if (((int)oldintr & 01) == 0)
+	if (oldintr != SIG_IGN)
 		signal(SIGINT, onintr);
-	if (((int)oldhup & 01) == 0)
+	if (oldhup != SIG_IGN)
 		signal(SIGHUP, onhup);
 	setjmp(savej);
 	commands();
@@ -636,7 +636,6 @@ exfile(void)
 void
 onintr(int sig)
 {
-#pragma ref sig
 	signal(SIGINT, onintr);
 	putchr('\n');
 	lastc = '\n';
@@ -646,7 +645,6 @@ onintr(int sig)
 void
 onhup(int sig)
 {
-#pragma ref sig
 	signal(SIGINT, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
 	if (dol > zero) {
@@ -925,7 +923,6 @@ quit(void)
 void
 onquit(int sig)
 {
-#pragma ref sig
 	quit();
 }
 
