@@ -1015,12 +1015,18 @@ putline(void)
 }
 
 void
-blkio(int b, unsigned char *buf, int (*iofcn)(int, char *, unsigned))
+blkio(int b, unsigned char *buf, int rw)
 {
-	lseek(tfile, b*BLKSIZE, SEEK_SET);
-	if ((*iofcn)(tfile, (char *)buf, BLKSIZE) != BLKSIZE) {
+	if(lseek(tfile, (long)b*(long)BLKSIZE, SEEK_SET)<0L)
 		error(T);
-	}
+	if(rw == READ) {
+		if (read(tfile, (char *)buf, BLKSIZE) != BLKSIZE)
+			error(T);
+	} else if(rw == WRITE) {
+		if (write(tfile, (char *)buf, BLKSIZE) != BLKSIZE)
+			error(T);
+	} else error(T);
+     
 }
 
 unsigned char *
@@ -1043,14 +1049,14 @@ getblock(int atl, int iof)
 		return obuff+off;
 	if (iof==READ) {
 		if (ichanged)
-			blkio(iblock, ibuff, write);
+			blkio(iblock, ibuff, WRITE);
 		ichanged = 0;
 		iblock = bno;
-		blkio(bno, ibuff, read);
+		blkio(bno, ibuff, READ);
 		return ibuff+off;
 	}
 	if (oblock>=0)
-		blkio(oblock, obuff, write);
+		blkio(oblock, obuff, WRITE);
 	oblock = bno;
 	return obuff+off;
 }
