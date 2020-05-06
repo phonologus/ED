@@ -44,7 +44,8 @@ clean:V:
 doc:V:  doc/$PROG.1.pdf
 
 install:V: all doc
-	mkdir -p $INSTALLD/bin $INSTALLD/man/man1 $INSTALLD/lib $INSTALLD/doc
+	rm -rf $INSTALLD
+	mkdir -p $INSTALLD/bin $INSTALLD/man/man1 $INSTALLD/doc
 	cp a.out $INSTALLD/bin/$PROG
 	cp a.out $INSTALLD/bin/$PROG1
 	cp doc/$PROG.1 $INSTALLD/man/man1/$PROG.1
