@@ -5,8 +5,6 @@
 #include <ansi.h>
 #include <posix.h>
 
-#include "utf.h"
-
 #define	FNSIZE	128
 #define	LBSIZE	4096
 #define	BLKSIZE	4096
@@ -68,7 +66,7 @@ int	col;
 char	*globp;
 int	tfile	= -1;
 int	tline;
-char	*tfname;
+char	tfname[]="/tmp/exxxxxx";
 short	*loc1;
 short	*loc2;
 unsigned char ibuff[BLKSIZE];
@@ -187,7 +185,6 @@ main(int argc, char *argv[])
 		globp = "r";
 	}
 	zero = (int*)malloc(nlall*sizeof(int));
-	tfname = tmpnam(0);
 	init();
 	if (oldintr != SIG_IGN)
 		signal(SIGINT, onintr);
@@ -1060,8 +1057,16 @@ void
 init(void)
 {
 	int *markp;
+	char *p;
+	int pid;
 
 	close(tfile);
+
+	pid=getpid();
+	for(p=&tfname[12];p>&tfname[6];){
+	  *--p=(pid%10)+'0';
+	  pid/=10;
+	}
 	tline = 2;
 	for (markp = names; markp < &names[26]; )
 		*markp++ = 0;
