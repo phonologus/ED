@@ -10,7 +10,6 @@
 #define	FNSIZE	128
 #define	LBSIZE	4096
 #define	BLKSIZE	4096
-#define	NBLK	2047
 #define	ESIZE	256
 #define	GBSIZE	256
 #define	NBRA	10
@@ -1036,10 +1035,6 @@ getblock(int atl, int iof)
 	
 	bno = (atl/(BLKSIZE/2));
 	off = (atl<<1) & (BLKSIZE-1) & ~03;
-	if (bno >= NBLK) {
-		lastc = '\n';
-		error(T);
-	}
 	nleft = BLKSIZE - off;
 	if (bno==iblock) {
 		ichanged |= iof;
