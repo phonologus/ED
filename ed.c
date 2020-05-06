@@ -1,8 +1,11 @@
 /*
  * Editor
  */
+
 #include <ansi.h>
 #include <posix.h>
+
+#include "utf.h"
 
 #define	NULL	0
 #define	FNSIZE	128

@@ -2,8 +2,8 @@
  * utf and utfio
  */
 
-#ifndef UTF4ED
-#define UTF4ED
+#ifndef UTFH
+#define UTFH
 
 enum {
   utfbytes=4,

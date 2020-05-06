@@ -9,6 +9,7 @@ PROG=ed
 INSTALLD=$HOME/opt/$PROG
 
 HDRS=\
+  utf.h \
   ansi.h \
   posix.h
 
