@@ -5,6 +5,7 @@ TAR=9 tar
 COMPRESS=9 compress
 
 PROG=ed
+PROG1=e
 
 INSTALLD=$HOME/opt/$PROG
 
@@ -49,8 +50,11 @@ doc:V:  doc/$PROG.1.pdf
 install:V: all doc
 	mkdir -p $INSTALLD/bin $INSTALLD/man/man1 $INSTALLD/lib $INSTALLD/doc
 	cp a.out $INSTALLD/bin/$PROG
-	cp doc/$PROG.1 $INSTALLD/man/man1/
+	cp a.out $INSTALLD/bin/$PROG1
+	cp doc/$PROG.1 $INSTALLD/man/man1/$PROG.1
+	cp doc/$PROG.1 $INSTALLD/man/man1/$PROG1.1
 	cp doc/$PROG.1.pdf $INSTALLD/doc/
+
 
 archive:V: $ARCHIVE
 	$TAR c $prereq | $COMPRESS > $PROG.tar.Z
