@@ -5,7 +5,7 @@
 #include <ansi.h>
 #include <posix.h>
 
-#include "utf.h"
+#include "utfio.h"
 
 #define	FNSIZE	128
 #define	LBSIZE	4096
@@ -1781,7 +1781,7 @@ putchr(int ac)
 				else if (c=='\t')
 					c = 't';
 				col++;
-			} else if (c<' ' || c>='\177') {
+			} else if (c<' ' || c=='\177') {
 				*lp++ = '\\';
 				*lp++ = 'x';
 				*lp++ =  hex[(c>>4)&0xF];

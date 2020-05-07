@@ -11,11 +11,13 @@ INSTALLD=$HOME/opt/$PROG
 
 HDRS=\
   utf.h \
+  utfio.h \
   ansi.h \
   posix.h
 
 MODULES=\
   utf \
+  utfio \
   ed
 
 DOCS=\
