@@ -706,7 +706,7 @@ getchr(void)
 	if(read(0,c,1)<= 0)
 		return lastc = EOF;
 
-	if(convutf(c,&lastc,1))
+	if(convnutf(c,&lastc,1))
 		return lastc;		/* unicode ascii */
 
 	/*
