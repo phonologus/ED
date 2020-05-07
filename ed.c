@@ -687,7 +687,10 @@ error(char *s)
 int
 getchr(void)
 {
-	unsigned char c;
+	byte b[utfbytes];
+	byte *c;
+
+	c=b;
 
 	if (lastc = peekc) {
 		peekc = 0;
@@ -699,10 +702,28 @@ getchr(void)
 		globp = 0;
 		return EOF;
 	}
-	if (read(0, (char *)&c, 1) <= 0)
+
+	if(read(0,c,1)<= 0)
 		return lastc = EOF;
-	lastc = c;
-	return lastc;
+
+	if(convutf(c,&lastc,1))
+		return lastc;		/* unicode ascii */
+
+	/*
+	 * lastc should now hold the number of extra bytes needed,
+	 * or 0 if there was a decoding error.
+	 */
+
+	if(0==lastc)
+		return lastc=utfeof;	/* decoding error */
+
+	if(read(0,++c,lastc)<=0)	/* get required extra bytes */
+		return lastc=utfeof;
+
+	if(convutf(--c,&lastc)) 	/* convert to codepoint */
+		return lastc;
+
+	return lastc = utfeof;		/* decoding error */
 }
 
 int
