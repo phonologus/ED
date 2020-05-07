@@ -5,6 +5,8 @@
 #include <ansi.h>
 #include <posix.h>
 
+#include "utf.h"
+
 #define	FNSIZE	128
 #define	LBSIZE	4096
 #define	BLKSIZE	4096

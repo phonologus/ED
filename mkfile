@@ -10,10 +10,12 @@ PROG1=e
 INSTALLD=$HOME/opt/$PROG
 
 HDRS=\
+  utf.h \
   ansi.h \
   posix.h
 
 MODULES=\
+  utf \
   ed
 
 DOCS=\
