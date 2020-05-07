@@ -34,8 +34,17 @@
 char	Q[]	= "";
 char	T[]	= "TMP";
 char	hex[]	= "0123456789abcdef";
+
 #define	READ	0
 #define	WRITE	1
+
+#define LINELEN 80
+
+int	line[LINELEN];
+int	*linp	= line;
+
+byte utf8buff[utfbsize];
+int ucbuff[ucbsize];
 
 int	peekc;
 int	lastc;
@@ -116,6 +125,7 @@ void	dosub(void);
 void	reverse(int*, int*);
 void	compile(int);
 void	putchr(int);
+void	flush(void);
 int	append(int(*)(void), int*);
 void	add(int);
 void	browse(void);
@@ -1742,13 +1752,10 @@ putshst(short *sp)
 	putchr('\n');
 }
 
-char	line[70];
-char	*linp	= line;
-
 void
 putchr(int ac)
 {
-	char *lp;
+	int *lp;
 	int c;
 
 	lp = linp;
@@ -1760,7 +1767,7 @@ putchr(int ac)
 				*lp++ = 'n';
 			}
 		} else {
-			if (col > (72-4-2)) {
+			if (col >= (LINELEN-8)) {
 				col = 8;
 				*lp++ = '\\';
 				*lp++ = '\n';
@@ -1777,17 +1784,45 @@ putchr(int ac)
 			} else if (c<' ' || c>='\177') {
 				*lp++ = '\\';
 				*lp++ = 'x';
-				*lp++ =  hex[c>>4];
+				*lp++ =  hex[(c>>4)&0xF];
 				c     =  hex[c&0xF];
 				col += 3;
+			} else if (c>'\177' && c<=0xFFFF) {
+				*lp++ = '\\';
+				*lp++ = 'u';
+				*lp++ =  hex[(c>>12)&0xF];
+				*lp++ =  hex[(c>>8)&0xF];
+				*lp++ =  hex[(c>>4)&0xF];
+				c     =  hex[c&0xF];
+				col += 5;
+			} else if (c>0xFFFF) {
+				*lp++ = '\\';
+				*lp++ = 'u';
+				*lp++ =  hex[(c>>20)&0xF];
+				*lp++ =  hex[(c>>16)&0xF];
+				*lp++ =  hex[(c>>12)&0xF];
+				*lp++ =  hex[(c>>8)&0xF];
+				*lp++ =  hex[(c>>4)&0xF];
+				c     =  hex[c&0xF];
+				col += 7;
 			}
 		}
 	}
 	*lp++ = c;
-	if(c == '\n' || lp >= &line[64]) {
-		linp = line;
-		write(oflag?2:1, line, lp-line);
-		return;
-	}
 	linp = lp;
+	if(c == '\n' || lp >= &line[64]) {
+		flush();
+		linp = line;
+	}
+}
+
+void
+flush(void)
+{
+	int n;
+	if(linp != line){
+		n=utf8nstring(line,utf8buff,linp-line);
+		write(oflag?2:1, utf8buff, n);
+		linp = line;
+	}
 }
