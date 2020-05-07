@@ -864,6 +864,7 @@ putfile(void)
 		putst(WRERR);
 		error(Q);
 	}
+	uioflush(uio);	/* don't forget to flush! */
 }
 
 int
