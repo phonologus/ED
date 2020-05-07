@@ -8,7 +8,7 @@
  *
  */
 
-#include "qed.h"
+#include "utfio.h"
 
 utfio *
 uioinit(int fd, utfio *io)    /* initialise empty buffer */

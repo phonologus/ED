@@ -7,38 +7,54 @@
 
 #include "utfio.h"
 
-#define	FNSIZE	128
-#define	LBSIZE	4096
-#define	BLKSIZE	4096
-#define	ESIZE	256
-#define	GBSIZE	256
-#define	NBRA	10
-#ifndef EOF
-#define	EOF	-1
-#endif /* EOF */
-#define	KSIZE	9
+enum {
+  FNSIZE = 512,
+  LBSIZE = 4096,
+  BLKSIZE = 4096,
+  BLKBSIZE = (BLKSIZE << 2),    /* # of bytes in a BLK */
+  ESIZE = 256,
+  GBSIZE = 256,
+  NBRA = 10,
+  KSIZE = 9
+};
 
-#define	CBRA	1
-#define	CCHR	2
-#define	CDOT	4
-#define	CCL	6
-#define	NCCL	8
-#define	CDOL	10
-#define	CEFIL	11
-#define	CKET	12
-#define	CBACK	14
-#define	CCIRC	15
+enum {
+  CBRA = 1,
+  CCHR = 2,
+  CDOT = 4,
+  CCL = 6,
+  NCCL = 8,
+  CDOL = 10,
+  CEFIL = 11,
+  CKET = 12,
+  CBACK = 14,
+  CCIRC = 15,
+  STAR = 01
+};
 
-#define	STAR	01
+int	Q[]	= {'\0'};
+int	T[]	= {'T','M','P','\0'};
+int	M[]	= {'M','E','M','?','\0'};
+int	F[]	= {'F','I','L','E','\0'};
+int	WRERR[]	= {'W','R','I','T','E',' ','E','R','R','O','R','\0'};
+int	STDOUT[]= {'/','d','e','v','/','s','t','d','o','u','t','\0'};
+int	NAPPENDED[]= {'\'','\\','n','\'',' ','a','p','p','e','n','d','e','d','\0'};
 
-char	Q[]	= "";
-char	T[]	= "TMP";
-char	hex[]	= "0123456789abcdef";
+int	A[]	= {'a','\0'};
+int	R[]	= {'r','\0'};
+int	SHRIEK[]= {'!','\0'};
+int	QUERY[]= {'?','\0'};
 
-#define	READ	0
-#define	WRITE	1
+int	hex[]	= {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','\0'};
 
-#define LINELEN 80
+enum {
+  READ = 0,
+  WRITE = 1
+};
+
+enum {
+  LINELEN = 70
+};
 
 int	line[LINELEN];
 int	*linp	= line;
@@ -46,24 +62,27 @@ int	*linp	= line;
 byte utf8buff[utfbsize];
 int ucbuff[ucbsize];
 
+utfio _uio;
+utfio *uio=&_uio;
+
 int	peekc;
 int	lastc;
-char	savedfile[FNSIZE];
-char	file[FNSIZE];
-short	linebuf[LBSIZE];
-short	rhsbuf[LBSIZE/2];
-short	expbuf[ESIZE+4];
-short	genbuf[LBSIZE];
+int	savedfile[FNSIZE];
+int	file[FNSIZE];
+int	linebuf[LBSIZE];
+int	rhsbuf[LBSIZE/2];
+int	expbuf[ESIZE+4];
+int	genbuf[LBSIZE];
 int	*zero;
 int	*dot;
 int	*dol;
 int	given;
 int	*addr1;
 int	*addr2;
-char	iobuf[LBSIZE];
+int	iobuf[LBSIZE];
 long	count;
-char	*nextip;
-short	*linebp;
+int	*nextip;
+int	*linebp;
 int	ninbuf;
 int	io;
 int	pflag;
@@ -74,48 +93,47 @@ int	oflag;
 int	listf;
 int	listn;
 int	col;
-char	*globp;
+int	*globp;
 int	tfile	= -1;
 int	tline;
 char	tfname[]="/tmp/exxxxxx";
-short	*loc1;
-short	*loc2;
-unsigned char ibuff[BLKSIZE];
+int	*loc1;
+int	*loc2;
+int	ibuff[BLKSIZE];
 int	iblock	= -1;
-unsigned char obuff[BLKSIZE];
+int	obuff[BLKSIZE];
 int	oblock	= -1;
 int	ichanged;
 int	nleft;
-char	WRERR[]	= "WRITE ERROR";
 int	names[26];
 int	anymarks;
-short	*braslist[NBRA];
-short	*braelist[NBRA];
+int	*braslist[NBRA];
+int	*braelist[NBRA];
 int	nbra;
 int	subnewa;
 int	subolda;
 int	fchange;
 int	wrapp;
 int	bpagesize = 20;
-unsigned nlall = 128;
+unsigned int nlall = 128;
 jmp_buf	savej;
 
 int*	address(void);
 int	getchr(void);
-short*	getline(int);
-unsigned char *getblock(int, int);
-short*	place(short*, short*, short*);
+int*	getline(int);
+int *	getblock(int, int);
+int*	place(int*, int*, int*);
 void	commands(void);
 void	quit(void);
 void	printcom(void);
-void	error(char*);
+void	error(int*);
 void	nonzero(void);
 void	newline(void);
 void	rdelete(int*, int*);
 void	setnoaddr(void);
 void	init(void);
-void	putst(char*);
-void	putshst(short*);
+void	putst(int*);
+void	putst(int*);
 void	squeeze(int);
 void	setwide(void);
 void	putfile(void);
@@ -143,9 +161,9 @@ int	getcopy(void);
 int	getnum(void);
 int	execute(int*);
 int	putline(void);
-int	advance(short*, short*);
-int	cclass(short*, int, int);
-int	backref(int, short*);
+int	advance(int*, int*);
+int	cclass(int*, int, int);
+int	backref(int, int*);
 
 void	onintr(int);
 void	onquit(int);
@@ -154,7 +172,7 @@ void	onhup(int);
 int
 main(int argc, char *argv[])
 {
-	char *p1, *p2;
+	int *p1, *p2;
 	void (*oldintr)(int);
 
 	oldquit = signal(SIGQUIT, SIG_IGN);
@@ -183,18 +201,18 @@ main(int argc, char *argv[])
 		argc--;
 	}
 	if (oflag) {
-		p1 = "/dev/stdout";
+		p1 = STDOUT;
 		p2 = savedfile;
 		while (*p2++ = *p1++)
 			;
-		globp = "a";
+		globp = A;
 	} else if (*argv) {
-		p1 = *argv;
+		p1 = ucode(*argv);
 		p2 = savedfile;
 		while (*p2++ = *p1++)
 			if (p2 >= &savedfile[sizeof(savedfile)])
 				p2--;
-		globp = "r";
+		globp = R;
 	}
 	zero = (int*)malloc(nlall*sizeof(int));
 	init();
@@ -211,7 +229,7 @@ void
 commands(void)
 {
 	int *a1, c, temp;
-	char lastsep;
+	int lastsep;
 
 	for (;;) {
 	if (pflag) {
@@ -312,8 +330,8 @@ commands(void)
 		if ((c = getchr()) < 'a' || c > 'z')
 			error(Q);
 		newline();
-		names[c-'a'] = *addr2 & ~01;
-		anymarks |= 01;
+		names[c-'a'] = unmark(*addr2);
+		anymarks = mark(anymarks);
 		continue;
 
 	case 'm':
@@ -355,12 +373,13 @@ commands(void)
 	case 'r':
 		filename(c);
 	caseread:
-		if ((io = open(file, O_RDONLY)) < 0) {
+		if ((io = open(utf8(file), O_RDONLY)) < 0) {
 			lastc = '\n';
 			error(file);
 		}
 		setwide();
 		squeeze(0);
+		uioinitrd(io,uio);
 		ninbuf = 0;
 		c = zero != dol;
 		append(getfile, addr2);
@@ -401,10 +420,11 @@ commands(void)
 		}
 		filename(c);
 		if(!wrapp ||
-		  ((io = open(file, O_WRONLY)) == -1) ||
+		  ((io = open(utf8(file), O_WRONLY)) == -1) ||
 		  ((lseek(io, 0L, SEEK_END)) == -1))
-			if ((io = creat(file, 0666)) == -1)
+			if ((io = creat(utf8(file), 0666)) == -1)
 				error(file);
+		uioinit(io,uio);
 		wrapp = 0;
 		if (dol > zero)
 			putfile();
@@ -451,7 +471,7 @@ printcom(void)
 			putd();
 			putchr('\t');
 		}
-		putshst(getline(*a1++));
+		putst(getline(*a1++));
 	} while (a1 <= addr2);
 	dot = addr2;
 	listf = 0;
@@ -596,7 +616,7 @@ newline(void)
 void
 filename(int comm)
 {
-	char *p1, *p2;
+	int *p1, *p2;
 	int c;
 
 	count = 0;
@@ -660,15 +680,17 @@ onhup(int sig)
 		addr1 = zero+1;
 		addr2 = dol;
 		io = creat("ed.hup", 0600);
-		if (io > 0)
+		if (io > 0) {
+			uioinit(io,uio);
 			putfile();
+		}
 	}
 	fchange = 0;
 	quit();
 }
 
 void
-error(char *s)
+error(int *s)
 {
 	int c;
 
@@ -740,8 +762,8 @@ int
 gety(void)
 {
 	int c;
-	char *gf;
-	short *p;
+	int *gf;
+	int *p;
 
 	p = linebuf;
 	gf = globp;
@@ -778,16 +800,16 @@ int
 getfile(void)
 {
 	int c;
-	char *fp;
-	short *lp;
+	int *fp;
+	int *lp;
 
 	lp = linebuf;
 	fp = nextip;
 	do {
 		if (--ninbuf < 0) {
-			if ((ninbuf = read(io, iobuf, LBSIZE)-1) < 0)
+			if ((ninbuf = uioread(uio, iobuf, LBSIZE)-1) < 0)
 				if (lp>linebuf) {
-					putst("'\\n' appended");
+					putst(NAPPENDED);
 					*iobuf = '\n';
 				} else
 					return EOF;
@@ -812,8 +834,8 @@ void
 putfile(void)
 {
 	int *a1, n, nib;
-	char *fp;
-	short *lp;
+	int *fp;
+	int *lp;
 
 	nib = BLKSIZE;
 	fp = iobuf;
@@ -823,7 +845,7 @@ putfile(void)
 		for (;;) {
 			if (--nib < 0) {
 				n = fp-iobuf;
-				if(write(io, iobuf, n) != n) {
+				if(uiowrite(uio, iobuf, n) != n) {
 					putst(WRERR);
 					error(Q);
 				}
@@ -838,7 +860,7 @@ putfile(void)
 		}
 	} while (a1 <= addr2);
 	n = fp-iobuf;
-	if(write(io, iobuf, n) != n) {
+	if(uiowrite(uio, iobuf, n) != n) {
 		putst(WRERR);
 		error(Q);
 	}
@@ -855,8 +877,8 @@ append(int (*f)(void), int *a)
 		if ((dol-zero)+1 >= nlall) {
 			int *ozero = zero;
 			nlall += 1024;
-			if ((zero = (int *)realloc((char *)zero, nlall*sizeof(int)))==NULL) {
-				error("MEM?");
+			if ((zero = (int *)realloc((byte *)zero, nlall*sizeof(int)))==NULL) {
+				error(M);
 				onhup(0);
 			}
 			dot += zero - ozero;
@@ -940,7 +962,7 @@ callunix(void)
 		;
 	signal(SIGINT, savint);
 	if (vflag) {
-		putst("!");
+		putst(SHRIEK);
 	}
 }
 
@@ -1002,11 +1024,11 @@ gdelete(void)
 	fchange = 1;
 }
 
-short*
+int*
 getline(int tl)
 {
-	unsigned char *bp;
-	short *lp;
+	int *bp;
+	int *lp;
 	int nl;
 
 	lp = linebuf;
@@ -1024,8 +1046,8 @@ getline(int tl)
 int
 putline(void)
 {
-	unsigned char *bp;
-	short *lp;
+	int *bp;
+	int *lp;
 	int nl, tl;
 
 	fchange = 1;
@@ -1051,21 +1073,21 @@ putline(void)
 }
 
 void
-blkio(int b, unsigned char *buf, int rw)
+blkio(int b, int *buf, int rw)
 {
-	if(lseek(tfile, (long)b*(long)BLKSIZE, SEEK_SET)<0L)
+	if(lseek(tfile, (long)b*(long)BLKBSIZE, SEEK_SET)<0L)
 		error(T);
 	if(rw == READ) {
-		if (read(tfile, (char *)buf, BLKSIZE) != BLKSIZE)
+		if (read(tfile, buf, BLKBSIZE) != BLKBSIZE)
 			error(T);
 	} else if(rw == WRITE) {
-		if (write(tfile, (char *)buf, BLKSIZE) != BLKSIZE)
+		if (write(tfile, buf, BLKBSIZE) != BLKBSIZE)
 			error(T);
 	} else error(T);
      
 }
 
-unsigned char *
+int *
 getblock(int atl, int iof)
 {
 	int bno, off;
@@ -1123,7 +1145,7 @@ init(void)
 void
 global(int k)
 {
-	char *gp, globuf[GBSIZE];
+	int *gp, globuf[GBSIZE];
 	int c, *a1;
 
 	if (globp)
@@ -1151,9 +1173,9 @@ global(int k)
 	*gp++ = '\n';
 	*gp = 0;
 	for (a1=zero; a1<=dol; a1++) {
-		*a1 &= ~01;
+		*a1 = unmark(*a1);
 		if (a1>=addr1 && a1<=addr2 && execute(a1)==k)
-			*a1 |= 01;
+			*a1 = mark(*a1);
 	}
 	/*
 	 * Special case: g/.../d (avoid n^2 algorithm)
@@ -1163,8 +1185,8 @@ global(int k)
 		return;
 	}
 	for (a1=zero; a1<=dol; a1++) {
-		if (*a1 & 01) {
-			*a1 &= ~01;
+		if (marked(*a1)) {
+			*a1 = unmark(*a1);
 			dot = a1;
 			globp = globuf;
 			commands();
@@ -1176,7 +1198,7 @@ global(int k)
 void
 join(void)
 {
-	short *gp, *lp;
+	int *gp, *lp;
 	int *a1;
 
 	nonzero();
@@ -1224,9 +1246,9 @@ substitute(int inglob)
 				}
 			} while (execute((int*)0));
 			if (m <= 0) {
-				inglob |= 01;
+				inglob = mark(inglob);
 				subnewa = putline();
-				*a1 &= ~01;
+				*a1 = unmark(*a1);
 				if (anymarks) {
 					for (mp = names; mp < &names[26]; mp++)
 						if (*mp == *a1)
@@ -1250,7 +1272,7 @@ int
 compsub(void)
 {
 	int seof, c;
-	short *p;
+	int *p;
 
 	if ((seof = getchr()) == '\n' || seof == ' ')
 		error(Q);
@@ -1259,10 +1281,10 @@ compsub(void)
 	for (;;) {
 		c = getchr();
 		if (c=='\\')
-			c = getchr() | 0x100;
+			c = escape(getchr());
 		if (c=='\n') {
 			if (globp && globp[0])	/* last '\n' does not count */
-				c |= 0x100;
+				c = escape(c);
 			else {
 				peekc = c;
 				pflag++;
@@ -1288,7 +1310,7 @@ compsub(void)
 int
 getsub(void)
 {
-	short *p1, *p2;
+	int *p1, *p2;
 
 	p1 = linebuf;
 	if ((p2 = linebp) == 0)
@@ -1302,7 +1324,7 @@ getsub(void)
 void
 dosub(void)
 {
-	short *lp, *sp, *rp;
+	int *lp, *sp, *rp;
 	int c;
 
 	lp = linebuf;
@@ -1314,11 +1336,11 @@ dosub(void)
 		if (c=='&') {
 			sp = place(sp, loc1, loc2);
 			continue;
-		} else if (c&0x100 && (c &= 0xFF) >='1' && c < nbra+'1') {
+		} else if (escaped(c) && (c=unescape(c)) >='1' &&  c < nbra+'1') {
 			sp = place(sp, braslist[c-'1'], braelist[c-'1']);
 			continue;
 		}
-		*sp++ = c&0xFF;
+		*sp++ = c;
 		if (sp >= &genbuf[LBSIZE])
 			error(Q);
 	}
@@ -1333,8 +1355,8 @@ dosub(void)
 		;
 }
 
-short*
-place(short *sp, short *l1, short *l2)
+int*
+place(int *sp, int *l1, int *l2)
 {
 
 	while (l1 < l2) {
@@ -1365,8 +1387,10 @@ move(int cflag)
 		adt += delta;
 	} else {
 		ad2 = addr2;
-		for (ad1 = addr1; ad1 <= ad2;)
-			*ad1++ &= ~01;
+		for (ad1 = addr1; ad1 <= ad2;) {
+			*ad1=unmark(*ad1);
+			ad1++;
+		}
 		ad1 = addr1;
 	}
 	ad2++;
@@ -1414,7 +1438,7 @@ void
 compile(int eof)
 {
 	int c, cclcnt;
-	short *ep, *lastep, bracket[NBRA], *bracketp;
+	int *ep, *lastep, bracket[NBRA], *bracketp;
 
 	ep = expbuf;
 	bracketp = bracket;
@@ -1546,7 +1570,7 @@ compile(int eof)
 int
 execute(int *addr)
 {
-	short *p1, *p2;
+	int *p1, *p2;
 	int c;
 
 	for (c=0; c<NBRA; c++) {
@@ -1591,9 +1615,9 @@ execute(int *addr)
 }
 
 int
-advance(short *lp, short *ep)
+advance(int *lp, int *ep)
 {
-	short *curlp;
+	int *curlp;
 	int i;
 
 	for (;;)
@@ -1697,9 +1721,9 @@ advance(short *lp, short *ep)
 }
 
 int
-backref(int i, short *lp)
+backref(int i, int *lp)
 {
-	short *bp;
+	int *bp;
 
 	bp = braslist[i];
 	while (*bp++ == *lp++)
@@ -1709,7 +1733,7 @@ backref(int i, short *lp)
 }
 
 int
-cclass(short *set, int c, int af)
+cclass(int *set, int c, int af)
 {
 	int n;
 
@@ -1735,16 +1759,7 @@ putd(void)
 }
 
 void
-putst(char *sp)
-{
-	col = 0;
-	while (*sp)
-		putchr(*sp++);
-	putchr('\n');
-}
-
-void
-putshst(short *sp)
+putst(int *sp)
 {
 	col = 0;
 	while (*sp)
@@ -1767,7 +1782,7 @@ putchr(int ac)
 				*lp++ = 'n';
 			}
 		} else {
-			if (col >= (LINELEN-8)) {
+			if (col > (LINELEN-6)) {
 				col = 8;
 				*lp++ = '\\';
 				*lp++ = '\n';
