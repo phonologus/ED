@@ -523,6 +523,7 @@ address(void)
 	return 0;
 }
 
+int
 getnum(void)
 {
 	int r, c;
@@ -683,6 +684,7 @@ error(char *s)
 	longjmp(savej, 1);
 }
 
+int
 getchr(void)
 {
 	unsigned char c;
@@ -703,6 +705,7 @@ getchr(void)
 	return lastc;
 }
 
+int
 gety(void)
 {
 	int c;
@@ -728,6 +731,7 @@ gety(void)
 	return 0;
 }
 
+int
 gettty(void)
 {
 	int rc;
@@ -739,6 +743,7 @@ gettty(void)
 	return 0;
 }
 
+int
 getfile(void)
 {
 	int c;
@@ -808,6 +813,7 @@ putfile(void)
 	}
 }
 
+int
 append(int (*f)(void), int *a)
 {
 	int *a1, *a2, *rdot, nline, tl;
@@ -984,6 +990,7 @@ getline(int tl)
 	return linebuf;
 }
 
+int
 putline(void)
 {
 	unsigned char *bp;
@@ -1208,6 +1215,7 @@ substitute(int inglob)
 		error(Q);
 }
 
+int
 compsub(void)
 {
 	int seof, c;
@@ -1246,6 +1254,7 @@ compsub(void)
 	return 0;
 }
 
+int
 getsub(void)
 {
 	short *p1, *p2;
@@ -1361,6 +1370,7 @@ reverse(int *a1, int *a2)
 	}
 }
 
+int
 getcopy(void)
 {
 	if (addr1 > addr2)
@@ -1502,6 +1512,7 @@ compile(int eof)
 	error(Q);
 }
 
+int
 execute(int *addr)
 {
 	short *p1, *p2;
@@ -1548,6 +1559,7 @@ execute(int *addr)
 	return 0;
 }
 
+int
 advance(short *lp, short *ep)
 {
 	short *curlp;
@@ -1653,6 +1665,7 @@ advance(short *lp, short *ep)
 	}
 }
 
+int
 backref(int i, short *lp)
 {
 	short *bp;
@@ -1664,6 +1677,7 @@ backref(int i, short *lp)
 	return 0;
 }
 
+int
 cclass(short *set, int c, int af)
 {
 	int n;
