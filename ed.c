@@ -143,7 +143,7 @@ void	dosub(void);
 void	reverse(int*, int*);
 void	compile(int);
 void	putchr(int);
-void	flush(void);
+void	flushchr(void);
 int	append(int(*)(void), int*);
 void	add(int);
 void	browse(void);
@@ -1827,13 +1827,13 @@ putchr(int ac)
 	*lp++ = c;
 	linp = lp;
 	if(c == '\n' || lp >= &line[64]) {
-		flush();
+		flushchr();
 		linp = line;
 	}
 }
 
 void
-flush(void)
+flushchr(void)
 {
 	int n;
 	if(linp != line){
