@@ -24,6 +24,7 @@ DOCS=\
   doc/ed.1\
 
 ARCHIVE=\
+  Makefile\
   mkfile\
   $DOCS\
   ${MODULES:%=%.c}\

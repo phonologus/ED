@@ -25,7 +25,7 @@ OBJS=$(MODULES:=.o)
 all: $(PROG)
 
 $(PROG): $(OBJS)  $(HDRS)
-	$(CC) -o $(PROG) $?
+	$(CC) -o $(PROG) $(OBJS)
 
 clean:
 	rm -f *.o $(PROG) 
