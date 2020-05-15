@@ -126,6 +126,7 @@ int*	place(int*, int*, int*);
 void	commands(void);
 void	quit(void);
 void	printcom(void);
+void	bye(int);
 void	error(int*);
 void	nonzero(void);
 void	newline(void);
@@ -956,7 +957,7 @@ callunix(void)
 		signal(SIGHUP, oldhup);
 		signal(SIGQUIT, oldquit);
 		execl("/bin/sh", "sh", "-t", 0);
-		exit(0100);
+		bye(0100);
 	}
 	savint = signal(SIGINT, SIG_IGN);
 	while ((rpid = wait(&retcode)) != pid && rpid != -1)
@@ -974,8 +975,15 @@ quit(void)
 		fchange = 0;
 		error(Q);
 	}
+	bye(0);
+}
+
+void
+bye(int e)
+{
 	remove(tfname);
-	exit(0);
+	free(zero);
+	exit(e);
 }
 
 void
