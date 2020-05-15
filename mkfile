@@ -43,7 +43,7 @@ a.out:	$OBJS
 	$CC $prereq
 
 clean:V:
-	rm -f *.o a.out doc/*.pdf
+	rm -f *.o a.out doc/*.pdf *.Z
 
 doc:V:  doc/$PROG.1.pdf
 
