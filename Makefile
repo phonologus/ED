@@ -8,9 +8,7 @@ PROG=ed
 
 HDRS=\
   utf.h \
-  utfio.h \
-  ansi.h \
-  posix.h
+  utfio.h
 
 MODULES=\
   utf \

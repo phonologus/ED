@@ -2,8 +2,14 @@
  * Editor
  */
 
-#include <ansi.h>
-#include <posix.h>
+#include <signal.h>
+#include <setjmp.h>
+#include <sys/types.h>  /* for open(), creat() and symbols for flags */
+#include <sys/stat.h>  /* for open(), creat() and symbols for flags */
+#include <fcntl.h>  /* for open(), creat() and symbols for flags */
+
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "utfio.h"
 
@@ -48,6 +54,7 @@ int	QUERY[]= {'?','\0'};
 int	hex[]	= {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f','\0'};
 
 enum {
+  EOF = -1,
   READ = 0,
   WRITE = 1
 };
