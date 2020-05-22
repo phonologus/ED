@@ -819,6 +819,7 @@ getfile(void)
 				if (lp>linebuf) {
 					putst(NAPPENDED);
 					*iobuf = '\n';
+					*(iobuf+1) = utfeof;
 				} else
 					return EOF;
 			fp = iobuf;
