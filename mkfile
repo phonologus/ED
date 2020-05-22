@@ -1,4 +1,4 @@
-CFLAGS=-ansi -I. -O -D_POSIX_SOURCE -fno-builtin
+CFLAGS=-ansi -O -D_POSIX_SOURCE -fno-builtin -Wall
 CC=gcc
 
 TAR=9 tar
@@ -36,21 +36,21 @@ OBJS=${MODULES:%=%.o}
 %.pdf:  %
 	9 troff -man $stem | tr2post | psfonts | ps2pdf - > $target
 
-all:V: a.out
+all:V: $PROG
 
-a.out:	$OBJS 
-	$CC $prereq
+$PROG:	$OBJS 
+	$CC -o $PROG $prereq
 
 clean:V:
-	rm -f *.o a.out doc/*.pdf *.Z
+	rm -f *.o $PROG doc/*.pdf *.Z
 
 doc:V:  doc/$PROG.1.pdf
 
 install:V: all doc
 	rm -rf $INSTALLD
 	mkdir -p $INSTALLD/bin $INSTALLD/man/man1 $INSTALLD/doc
-	cp a.out $INSTALLD/bin/$PROG
-	cp a.out $INSTALLD/bin/$PROG1
+	cp $PROG $INSTALLD/bin/$PROG
+	cp $PROG $INSTALLD/bin/$PROG1
 	cp doc/$PROG.1 $INSTALLD/man/man1/$PROG.1
 	cp doc/$PROG.1 $INSTALLD/man/man1/$PROG1.1
 	cp doc/$PROG.1.pdf $INSTALLD/doc/
