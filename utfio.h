@@ -5,6 +5,8 @@
  * utfio
  */
 
+#include <unistd.h>	/* read(), write() */
+
 #include "utf.h"
 
 enum {

@@ -6,6 +6,7 @@
 #include <setjmp.h>
 #include <sys/types.h>  /* for open(), creat() and symbols for flags */
 #include <sys/stat.h>  /* for open(), creat() and symbols for flags */
+#include <sys/wait.h>  /* for wait() */
 #include <fcntl.h>  /* for open(), creat() and symbols for flags */
 
 #include <unistd.h>
@@ -60,7 +61,8 @@ enum {
 };
 
 enum {
-  LINELEN = 70
+  LINELEN = 80,    /* max number of glyphs in list-mode line */
+  BELL = 8         /* max number of glyphs needed for a codepoint */
 };
 
 int	line[LINELEN];
@@ -211,13 +213,13 @@ main(int argc, char *argv[])
 	if (oflag) {
 		p1 = STDOUT;
 		p2 = savedfile;
-		while (*p2++ = *p1++)
+		while ((*p2++ = *p1++))
 			;
 		globp = A;
 	} else if (*argv) {
-		p1 = ucode(*argv);
+		p1 = ucode((byte *)*argv);
 		p2 = savedfile;
-		while (*p2++ = *p1++)
+		while ((*p2++ = *p1++))
 			if (p2 >= &savedfile[sizeof(savedfile)])
 				p2--;
 		globp = R;
@@ -231,6 +233,7 @@ main(int argc, char *argv[])
 	setjmp(savej);
 	commands();
 	quit();
+	return -1;  /* not reached */
 }
 
 void
@@ -381,7 +384,7 @@ commands(void)
 	case 'r':
 		filename(c);
 	caseread:
-		if ((io = open(utf8(file), O_RDONLY)) < 0) {
+		if ((io = open((char *)utf8(file), O_RDONLY)) < 0) {
 			lastc = '\n';
 			error(file);
 		}
@@ -428,9 +431,9 @@ commands(void)
 		}
 		filename(c);
 		if(!wrapp ||
-		  ((io = open(utf8(file), O_WRONLY)) == -1) ||
+		  ((io = open((char *)utf8(file), O_WRONLY)) == -1) ||
 		  ((lseek(io, 0L, SEEK_END)) == -1))
-			if ((io = creat(utf8(file), 0666)) == -1)
+			if ((io = creat((char *)utf8(file), 0666)) == -1)
 				error(file);
 		uioinit(io,uio);
 		wrapp = 0;
@@ -634,7 +637,7 @@ filename(int comm)
 		if (*p1==0 && comm!='f')
 			error(Q);
 		p2 = file;
-		while (*p2++ = *p1++)
+		while ((*p2++ = *p1++))
 			;
 		return;
 	}
@@ -654,7 +657,7 @@ filename(int comm)
 	if (savedfile[0]==0 || comm=='e' || comm=='f') {
 		p1 = savedfile;
 		p2 = file;
-		while (*p1++ = *p2++)
+		while ((*p1++ = *p2++))
 			;
 	}
 }
@@ -732,7 +735,7 @@ getchr(void)
 
 	c=b;
 
-	if (lastc = peekc) {
+	if ((lastc = peekc)) {
 		peekc = 0;
 		return lastc;
 	}
@@ -797,7 +800,7 @@ gettty(void)
 {
 	int rc;
 
-	if (rc = gety())
+	if ((rc = gety()))
 		return rc;
 	if (linebuf[0]=='.' && linebuf[1]==0)
 		return EOF;
@@ -815,13 +818,15 @@ getfile(void)
 	fp = nextip;
 	do {
 		if (--ninbuf < 0) {
-			if ((ninbuf = uioread(uio, iobuf, LBSIZE)-1) < 0)
+			ninbuf = uioread(uio, iobuf, LBSIZE)-1;
+			if (ninbuf < 0) {
 				if (lp>linebuf) {
 					putst(NAPPENDED);
 					*iobuf = '\n';
 					*(iobuf+1) = utfeof;
 				} else
 					return EOF;
+			}
 			fp = iobuf;
 		}
 		c = *fp++;
@@ -922,7 +927,7 @@ void
 browse(void)
 {
 	int forward, n;
-	static bformat, bnum; /* 0 */
+	static int bformat, bnum; /* 0 */
 
 	forward = 1;
 	if((peekc=getchr()) != '\n'){
@@ -989,7 +994,7 @@ quit(void)
 void
 bye(int e)
 {
-	remove(tfname);
+	unlink(tfname);
 	free(zero);
 	exit(e);
 }
@@ -1052,7 +1057,7 @@ getline(int tl)
 	bp = getblock(tl, READ);
 	nl = nleft;
 	tl &= ~((BLKSIZE/2)-1);
-	while (*lp++ = *bp++)
+	while ((*lp++ = *bp++))
 		if (--nl == 0) {
 			bp = getblock(tl+=(BLKSIZE/2), READ);
 			nl = nleft;
@@ -1073,7 +1078,7 @@ putline(void)
 	bp = getblock(tl, WRITE);
 	nl = nleft;
 	tl &= ~((BLKSIZE/2)-1);
-	while (*bp = *lp++) {
+	while ((*bp = *lp++)) {
 		if (*bp++ == '\n') {
 			*--bp = 0;
 			linebp = lp;
@@ -1222,13 +1227,13 @@ join(void)
 	gp = genbuf;
 	for (a1=addr1; a1<=addr2; a1++) {
 		lp = getline(*a1);
-		while (*gp = *lp++)
+		while ((*gp = *lp++))
 			if (gp++ >= &genbuf[LBSIZE-2])
 				error(Q);
 	}
 	lp = linebuf;
 	gp = genbuf;
-	while (*lp++ = *gp++)
+	while ((*lp++ = *gp++))
 		;
 	*addr1 = putline();
 	if (addr1 < addr2)
@@ -1332,7 +1337,7 @@ getsub(void)
 	p1 = linebuf;
 	if ((p2 = linebp) == 0)
 		return EOF;
-	while (*p1++ = *p2++)
+	while ((*p1++ = *p2++))
 		;
 	linebp = 0;
 	return 0;
@@ -1349,7 +1354,7 @@ dosub(void)
 	rp = rhsbuf;
 	while (lp < loc1)
 		*sp++ = *lp++;
-	while (c = *rp++) {
+	while ((c = *rp++)) {
 		if (c=='&') {
 			sp = place(sp, loc1, loc2);
 			continue;
@@ -1363,12 +1368,12 @@ dosub(void)
 	}
 	lp = loc2;
 	loc2 = sp - genbuf + linebuf;
-	while (*sp++ = *lp++)
+	while ((*sp++ = *lp++))
 		if (sp >= &genbuf[LBSIZE])
 			error(Q);
 	lp = linebuf;
 	sp = genbuf;
-	while (*lp++ = *sp++)
+	while ((*lp++ = *sp++))
 		;
 }
 
@@ -1785,13 +1790,11 @@ putst(int *sp)
 }
 
 void
-putchr(int ac)
+putchr(int c)
 {
 	int *lp;
-	int c;
 
 	lp = linp;
-	c = ac;
 	if (listf) {
 		if (c=='\n') {
 			if (linp!=line && linp[-1]==' ') {
@@ -1799,7 +1802,7 @@ putchr(int ac)
 				*lp++ = 'n';
 			}
 		} else {
-			if (col > (LINELEN-6)) {
+			if (col >= (LINELEN-BELL)) {
 				col = 8;
 				*lp++ = '\\';
 				*lp++ = '\n';
@@ -1829,7 +1832,7 @@ putchr(int ac)
 				col += 5;
 			} else if (c>0xFFFF) {
 				*lp++ = '\\';
-				*lp++ = 'u';
+				*lp++ = 'U';
 				*lp++ =  hex[(c>>20)&0xF];
 				*lp++ =  hex[(c>>16)&0xF];
 				*lp++ =  hex[(c>>12)&0xF];
@@ -1841,11 +1844,12 @@ putchr(int ac)
 		}
 	}
 	*lp++ = c;
-	linp = lp;
-	if(c == '\n' || lp >= &line[64]) {
+	if(c == '\n' || lp >= &line[LINELEN-BELL]) {
+		linp=lp;
 		flushchr();
-		linp = line;
+		lp = linp;
 	}
+	linp = lp;
 }
 
 void
