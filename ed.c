@@ -964,7 +964,7 @@ callunix(void)
 	if ((pid = fork()) == 0) {
 		signal(SIGHUP, oldhup);
 		signal(SIGQUIT, oldquit);
-		execl("/bin/sh", "sh", "-t", 0);
+		execl("/bin/sh", "sh", "-t", (char *)NULL);
 		bye(0100);
 	}
 	savint = signal(SIGINT, SIG_IGN);
