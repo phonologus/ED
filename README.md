@@ -17,13 +17,12 @@ The original manpage is in the `doc` subdirectory.
 Where the behaviour of this `ed` differs significantly from
 that described in the manpage is noted below.
 
-The `Makefile` provides a simple way to build an `ed` binary.
+The `Makefile` provides a simple way to build and install
+an `ed` binary.
 `make clean && make` will get you a standalone binary `ed` that
-can be installed anywhere.
-
-The more elaborate `mkfile` can build, install, and archive.
-It can also run off a `pdf` version of the manpage. However, it
-depends on you having a working [plan9port](https://github.com/9fans/plan9port).
+can be installed anywhere. `make install` will install ED as `ed`
+and `e`, with corresponding manpages. Edit the `Makefile` to change
+where all this goes.
 
 ## Differences
 
@@ -38,3 +37,11 @@ This `ed` differs from the ED described in the manpage as follows:
   ASCII range as `\xhh`. Additionally, it displays non-ASCII
   code-points in the Basic Multilingual Plane as `\uhhhh`, and
   code-points beyond the BMP as `\Uhhhhhh`.
+
++ The manpage states that ED discards all text in a file that
+  appears between the last newline and the end-of-file. The
+  original `ed.c` source code does not do that. Instead it
+  supplies a newline at the end of the file, and notifies the
+  user with a: `'\n' appended` message. This behaviour has been
+  retained.
+
