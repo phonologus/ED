@@ -1,13 +1,14 @@
 .SUFFIXES: .o .c .h
 .PHONY: all clean install
 
-CFLAGS=-ansi -O -D_POSIX_SOURCE -fno-builtin -Wall
-CC=gcc
+CFLAGS=-ansi -O2 -D_POSIX_SOURCE -fno-builtin -Wall
+CC=cc
+INSTALL=install
 
 PROG=ed
 ALT=e
 
-INSTALLD=$(HOME)/opt/$(PROG)
+INSTALLD=/usr/local
 
 MANPAGE=\
   doc/ed.1
@@ -35,10 +36,10 @@ clean:
 	rm -f *.o $(PROG) 
 
 install: all $(MANPAGE)
-	rm -rf $(INSTALLD)
-	mkdir -p $(INSTALLD)/bin $(INSTALLD)/man/man1
-	cp $(PROG) $(INSTALLD)/bin/
-	cp $(PROG) $(INSTALLD)/bin/$(ALT)
-	cp $(MANPAGE) $(INSTALLD)/man/man1/
-	cp $(MANPAGE) $(INSTALLD)/man/man1/$(ALT).1
+	$(INSTALL) -d $(INSTALLD)/bin
+	$(INSTALL) -d $(INSTALLD)/share/man/man1
+	$(INSTALL) -s $(PROG) $(INSTALLD)/bin/
+	$(INSTALL) -s $(PROG) $(INSTALLD)/bin/$(ALT)
+	$(INSTALL) $(MANPAGE) $(INSTALLD)/share/man/man1/
+	$(INSTALL) $(MANPAGE) $(INSTALLD)/share/man/man1/$(ALT).1
 
