@@ -14,6 +14,8 @@
 
 #include "utfio.h"
 
+#define nelem(X) (sizeof(X) / sizeof(X[0]))
+
 enum {
   FNSIZE = 512,
   LBSIZE = 4096,
@@ -220,7 +222,7 @@ main(int argc, char *argv[])
 		p1 = ucode((byte *)*argv);
 		p2 = savedfile;
 		while ((*p2++ = *p1++))
-			if (p2 >= &savedfile[sizeof(savedfile)])
+			if (p2 >= &savedfile[nelem(savedfile)])
 				p2--;
 		globp = R;
 	}
@@ -649,7 +651,7 @@ filename(int comm)
 		error(Q);
 	p1 = file;
 	do {
-		if (p1 >= &file[sizeof(file)-1] || c==' ' || c==EOF)
+		if (p1 >= &file[nelem(file)-1] || c==' ' || c==EOF)
 			error(Q);
 		*p1++ = c;
 	} while ((c = getchr()) != '\n');
