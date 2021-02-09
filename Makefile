@@ -1,5 +1,5 @@
 .SUFFIXES: .o .c .h
-.PHONY: all clean install
+.PHONY: all clean install uninstall
 
 CFLAGS=-ansi -O2 -D_POSIX_SOURCE -fno-builtin -Wall
 CC=cc
@@ -42,4 +42,10 @@ install: all $(MANPAGE)
 	$(INSTALL) -s $(PROG) $(INSTALLD)/bin/$(ALT)
 	$(INSTALL) $(MANPAGE) $(INSTALLD)/share/man/man1/
 	$(INSTALL) $(MANPAGE) $(INSTALLD)/share/man/man1/$(ALT).1
+
+uninstall:
+	rm -f $(INSTALLD)/bin/ed
+	rm -f $(INSTALLD)/bin/$(ALT)
+	rm -f $(INSTALLD)/share/man/man1/ed.1
+	rm -f $(INSTALLD)/share/man/man1/$(ALT).1
 
