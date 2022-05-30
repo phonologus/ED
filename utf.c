@@ -14,7 +14,7 @@
 
 /*
  * convnutf() returns the number of bytes of valid utf
- * dencoded at p, or 0 if p does not point to a valid utf
+ * decoded at p, or 0 if p does not point to a valid utf
  * encoding. It additionally puts the decoded value into
  * the integer reference z, or 0 if utf is not valid.
  *

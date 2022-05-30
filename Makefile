@@ -1,7 +1,7 @@
 .SUFFIXES: .o .c .h
 .PHONY: all clean install uninstall
 
-CFLAGS=-ansi -O2 -D_POSIX_SOURCE -fno-builtin -Wall
+CFLAGS=-std=c89 -O -Wall
 CC=cc
 INSTALL=install
 

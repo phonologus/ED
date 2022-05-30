@@ -1,13 +1,7 @@
-# ED, the standard editor, now UTF8/Unicode-aware.
+# ED, the standard editor, now UTF-8/Unicode-aware.
 
-This is a port of the Research Unix (v10) ED, with full UTF8/Unicode
+This is a port of the Research Unix (v10) ED, with UTF-8/Unicode
 support. In particular, regexes and subs are fully Unicode-aware.
-
-The port was developed on a modern Linux (Fedora 32). It
-depends on just a few low-level kernel calls, so should be reasonably
-portable accross any Unix-like OS.
-I have successfully built it on Linux, macOS and OpneBSD, with both
-`clang` and `gcc`.
 
 The sources that this port began with were scavenged from the
 Research Unix sources available from
@@ -28,17 +22,21 @@ where all this goes.
 
 This `ed` differs from the ED described in the manpage as follows:
 
-+ This `ed` consumes and outputs UTF8 Unicode. Internally, all
++ This `ed` consumes and outputs UTF-8 Unicode. Internally, all
   "characters" are stored and manipulated as Unicode code-points
   represented as `int`-s. This means that even
-  _emojis_ can appear in regexes. Shudder.
+  _emojis_ can appear in regexes and character classes.
 
 + In *list mode*, this `ed` displays non-printing codepoints in the
-  ASCII range as `\xhh`. Additionally, it displays non-ASCII
-  code-points in the Basic Multilingual Plane as `\uhhhh`, and
-  code-points beyond the BMP as `\Uhhhhhh`.
+  ASCII range, and all Unicode codepoints above the printing ASCII
+  range as a sequence `\ddd` of octal triplets, one for each byte
+  in the UTF-8 encoding of the codepoint. Octal is the traditional
+  ED list mode format, and it is a surprisingly good way of reading
+  raw UTF-8, as all multi-byte sequences begin with byte `\3..`, and all
+  subsequent sequence bytes begin `\2..`. (Non-printing) ASCII bytes
+  are all of the form `\0..`, or `\1..`.
 
-+ The manpage states that ED discards all text in a file that
++ The original manpage states that ED discards all text in a file that
   appears between the last newline and the end-of-file. The
   original `ed.c` source code does not do that. Instead it
   supplies a newline at the end of the file, and notifies the

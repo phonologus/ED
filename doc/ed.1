@@ -1,3 +1,4 @@
+.ad l
 .TH ED 1
 .CT 1 editor
 .ds . (\|\f5.\fP\|)
@@ -152,10 +153,10 @@ with
 and
 .I b
 in ascending
-.SM ASCII 
+.SM Unicode 
 order, stands for the inclusive
 range of
-.SM ASCII 
+.SM Unicode 
 characters.
 .IP 5.
 A regular expression of form 1-4 followed by
@@ -550,8 +551,10 @@ a backspace as
 .BR \eb ,
 backslashes as
 .BR \e\e ,
-and non-printing characters are
-printed as a backslash followed by three octal digits.
+and printable ASCII characters are printed as themselves.
+All other (Uncicode) characters are printed as a 
+backslash and three octal digits for each byte of their UTF-8
+representation.
 Long lines are folded,
 with the second and subsequent sub-lines indented one tab stop.
 If the last character in the line is a blank,
@@ -763,18 +766,23 @@ When reading a file,
 .I ed
 discards
 .SM ASCII NUL
-characters
-and all characters after the last newline.
-It refuses to read files containing non-\c
-.SM ASCII
-characters.
+characters. If there are any characters
+after the last newline,
+.I ed
+supplies a final newline and prints the
+message
+.I ?N appended
+on the terminal.
+It refuses to read files not conforming to the
+.SM UTF-8
+standard.
 .SH FILES
 .B /tmp/e*
 .br
 .B ed.hup
 \ \ work is saved here if terminal hangs up
 .SH "SEE ALSO"
-.IR sam (9.1), 
+.IR qed (1), 
 .IR sed (1), 
 .IR vi (1)
 .SH DIAGNOSTICS
@@ -782,6 +790,8 @@ characters.
 for inaccessible file;
 .B ?TMP
 for temporary file overflow;
+.B ?N appended
+when a final newline has been appended;
 .B ?
 for errors in commands or other overflows.
 .PP
