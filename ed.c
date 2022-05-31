@@ -693,7 +693,7 @@ onhup(int sig)
   if (dol > zero) {
     addr1 = zero+1;
     addr2 = dol;
-    io = creat("ed.hup", 0600);
+    io = open("ed.hup", O_CREAT | O_WRONLY | O_TRUNC, 0600);
     if (io > 0) {
       uioinit(io,uio);
       putfile();
