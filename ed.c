@@ -45,10 +45,10 @@ int  Q[]  = {'\0'};
 int  T[]  = {'T','M','P','\0'};
 int  M[]  = {'M','E','M','?','\0'};
 int  F[]  = {'F','I','L','E','\0'};
-int  WRERR[]  = {'W','R','I','T','E',' ','E','R','R','O','R','\0'};
 int  STDOUT[]= {'/','d','e','v','/','s','t','d','o','u','t','\0'};
 int  NAPPENDED[]= {'?','N',' ','a','p','p','e','n','d','e','d','\0'};
 
+int NL[] = {'\n','\0'};
 int  A[]  = {'a','\0'};
 int  R[]  = {'r','\0'};
 int  SHRIEK[]= {'!','\0'};
@@ -88,11 +88,8 @@ long  *dol;
 int  given;
 long  *addr1;
 long  *addr2;
-int  iobuf[LBSIZE];
 long  count;
-int  *nextip;
 int  *linebp;
-int  ninbuf;
 int  io;
 int  pflag;
 void  (*oldhup)(int);
@@ -223,7 +220,10 @@ main(int argc, char *argv[])
         p2--;
     globp = R;
   }
-  zero = (long*)malloc(nlall*sizeof(long));
+  if((zero = (long*)malloc(nlall*sizeof(long)))==NULL) {
+    error(M);
+    onhup(0);
+  }
   init();
   if (oldintr != SIG_IGN)
     signal(SIGINT, onintr);
@@ -391,7 +391,6 @@ commands(void)
     setwide();
     squeeze(0);
     uioinitrd(io,uio);
-    ninbuf = 0;
     c = zero != dol;
     append(getfile, addr2);
     exfile();
@@ -693,7 +692,7 @@ onhup(int sig)
   if (dol > zero) {
     addr1 = zero+1;
     addr2 = dol;
-    io = open("ed.hup", O_CREAT | O_WRONLY | O_TRUNC, 0600);
+    io = open("ed.hup", O_WRONLY | O_TRUNC | O_CREAT, 0600);
     if (io > 0) {
       uioinit(io,uio);
       putfile();
@@ -814,25 +813,19 @@ int
 getfile(void)
 {
   int c;
-  int *fp;
   int *lp;
 
   lp = linebuf;
-  fp = nextip;
   do {
-    if (--ninbuf < 0) {
-      ninbuf = uioread(uio, iobuf, LBSIZE)-1;
-      if (ninbuf < 0) {
-        if (lp>linebuf) {
-          putst(NAPPENDED);
-          *iobuf = '\n';
-          *(iobuf+1) = utfeof;
-        } else
-          return EOF;
-      }
-      fp = iobuf;
+    if(uioread(uio,&c,1)<0)
+      error(Q);
+    if(c==utfeof) {
+      if (lp>linebuf) {
+        putst(NAPPENDED);
+        c = '\n';
+      } else
+        return EOF;
     }
-    c = *fp++;
     if (c == '\0')
       continue;
     if (lp >= &linebuf[LBSIZE]) {
@@ -843,7 +836,6 @@ getfile(void)
     count++;
   } while (c != '\n');
   *--lp = 0;
-  nextip = fp;
   return 0;
 }
 
@@ -851,38 +843,25 @@ void
 putfile(void)
 {
   long *a1;
-  int n, nib;
-  int *fp;
+  int c;
   int *lp;
 
-  nib = BLKSIZE;
-  fp = iobuf;
   a1 = addr1;
   do {
     lp = getline(*a1++);
     for (;;) {
-      if (--nib < 0) {
-        n = fp-iobuf;
-        if(uiowrite(uio, iobuf, n) != n) {
-          putst(WRERR);
-          error(Q);
-        }
-        nib = BLKSIZE-1;
-        fp = iobuf;
-      }
       count++;
-      if ((*fp++ = *lp++) == 0) {
-        fp[-1] = '\n';
+      if ((c = *lp++) == 0) {
+        if(uiowrite(uio,NL,1)<0)
+          error(Q);
         break;
       }
+      if(uiowrite(uio,&c,1)<0)
+        error(Q);
     }
   } while (a1 <= addr2);
-  n = fp-iobuf;
-  if(uiowrite(uio, iobuf, n) != n) {
-    putst(WRERR);
+  if(uioflush(uio)<0)  /* don't forget to flush! */
     error(Q);
-  }
-  uioflush(uio);  /* don't forget to flush! */
 }
 
 long
