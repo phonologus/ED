@@ -14,6 +14,12 @@
 
 #define nelem(X) (sizeof(X) / sizeof(X[0]))
 
+#define MARK 1L
+#define UNMARK ~1L
+#define mark(n) ((n)|MARK)
+#define unmark(n) ((n)&UNMARK)
+#define marked(n) ((n)&MARK)
+
 enum {
   FNSIZE = 512,
   LBSIZE = 4096,
@@ -21,8 +27,7 @@ enum {
   BLKBSIZE = (BLKSIZE << 2),    /* # of bytes in a BLK */
   ESIZE = 256,
   GBSIZE = 256,
-  NBRA = 10,
-  KSIZE = 9
+  NBRA = 9
 };
 
 enum {
@@ -102,7 +107,8 @@ int  col;
 int  *globp;
 int  tfile  = -1;
 int  tline;
-char  tfname[]="/tmp/exxxxxx";
+char  tftemp[]="/tmp/eXXXXXX";
+char  tfname[sizeof(tftemp)];
 int  *loc1;
 int  *loc2;
 int  ibuff[BLKSIZE];
@@ -328,7 +334,6 @@ commands(void)
     add(-1);
     continue;
 
-
   case 'j':
     if (!given)
       addr2++;
@@ -440,6 +445,7 @@ commands(void)
     wrapp = 0;
     if (dol > zero)
       putfile();
+    uioflush(uio);
     exfile();
     if (addr1<=zero+1 && addr2==dol)
       fchange = 0;
@@ -696,6 +702,8 @@ onhup(int sig)
     if (io > 0) {
       uioinit(io,uio);
       putfile();
+      uioflush(uio);
+      exfile();
     }
   }
   fchange = 0;
@@ -860,8 +868,6 @@ putfile(void)
         error(Q);
     }
   } while (a1 <= addr2);
-  if(uioflush(uio)<0)  /* don't forget to flush! */
-    error(Q);
 }
 
 long
@@ -1124,16 +1130,19 @@ void
 init(void)
 {
   long *markp;
-  char *p;
-  int pid;
+  char *a, *b;
 
   close(tfile);
+  unlink(tfname);
 
-  pid=getpid();
-  for(p=&tfname[12];p>&tfname[6];){
-    *--p=(pid%10)+'0';
-    pid/=10;
-  }
+  a=tfname;
+  b=tftemp;
+
+  while((*a++=*b++))
+    ;
+  if((tfile = mkstemp(tfname)) == -1)
+    error(T);
+
   tline = 2;
   for (markp = names; markp < &names[26]; )
     *markp++ = 0;
@@ -1142,8 +1151,6 @@ init(void)
   iblock = -1;
   oblock = -1;
   ichanged = 0;
-  if((tfile = open(tfname, O_RDWR | O_TRUNC | O_CREAT,0600)) == -1)
-    error(T);
   dot = dol = zero;
 }
 

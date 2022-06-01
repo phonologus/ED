@@ -56,10 +56,14 @@ commands.
 If no 
 .I file
 is given, make
-.F /dev/stdout
+.I /dev/stdout
 the remembered file; see the
 .B e
-command below.
+command below. 
+.I Ed
+starts in append mode (simulating an
+.B a
+command).
 .PP
 .I Ed
 operates on a `buffer', a copy of the file it is editing;
