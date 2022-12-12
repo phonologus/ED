@@ -99,6 +99,7 @@ int  io;
 int  pflag;
 void  (*oldhup)(int);
 void  (*oldquit)(int);
+void  (*oldintr)(int);
 int  vflag  = 1;
 int  oflag;
 int  listf;
@@ -185,7 +186,6 @@ int
 main(int argc, char *argv[])
 {
   int *p1, *p2;
-  void (*oldintr)(int);
 
   oldquit = signal(SIGQUIT, SIG_IGN);
   oldhup = signal(SIGHUP, SIG_IGN);
@@ -245,234 +245,234 @@ void
 commands(void)
 {
   long *a1;
-        int c, temp;
+  int c, temp;
   int lastsep;
 
   for (;;) {
-  if (pflag) {
-    pflag = 0;
-    addr1 = addr2 = dot;
-    printcom();
-  }
-  c = '\n';
-  for (addr1 = 0;;) {
-    lastsep = c;
-    a1 = address();
-    c = getchr();
-    if (c!=',' && c!=';')
-      break;
-    if (lastsep==',')
-      error(Q);
-    if (a1==0) {
-      a1 = zero+1;
-      if (a1>dol)
-        a1--;
+    if (pflag) {
+      pflag = 0;
+      addr1 = addr2 = dot;
+      printcom();
     }
-    addr1 = a1;
-    if (c==';')
-      dot = a1;
-  }
-  if (lastsep!='\n' && a1==0)
-    a1 = dol;
-  if ((addr2=a1)==0) {
-    given = 0;
-    addr2 = dot;  
-  }
-  else
-    given = 1;
-  if (addr1==0)
-    addr1 = addr2;
-  switch(c) {
-
-  case 'a':
-    add(0);
-    continue;
-
-  case 'b':
-    nonzero();
-    browse();
-    continue;
-
-  case 'c':
-    nonzero();
-    newline();
-    rdelete(addr1, addr2);
-    append(gettty, addr1-1);
-    continue;
-
-  case 'd':
-    nonzero();
-    newline();
-    rdelete(addr1, addr2);
-    continue;
-
-  case 'E':
-    fchange = 0;
-    c = 'e';
-  case 'e':
-    setnoaddr();
-    if (vflag && fchange) {
-      fchange = 0;
-      error(Q);
-    }
-    filename(c);
-    init();
-    addr2 = zero;
-    goto caseread;
-
-  case 'f':
-    setnoaddr();
-    filename(c);
-    putst(savedfile);
-    continue;
-
-  case 'g':
-    global(1);
-    continue;
-
-  case 'i':
-    add(-1);
-    continue;
-
-  case 'j':
-    if (!given)
-      addr2++;
-    newline();
-    join();
-    continue;
-
-  case 'k':
-    nonzero();
-    if ((c = getchr()) < 'a' || c > 'z')
-      error(Q);
-    newline();
-    names[c-'a'] = unmark(*addr2);
-    anymarks = mark(anymarks);
-    continue;
-
-  case 'm':
-    move(0);
-    continue;
-
-  case 'n':
-    listn++;
-    newline();
-    printcom();
-    continue;
-
-  case '\n':
-    if (a1==0) {
-      a1 = dot+1;
-      addr2 = a1;
+    c = '\n';
+    for (addr1 = 0;;) {
+      lastsep = c;
+      a1 = address();
+      c = getchr();
+      if (c!=',' && c!=';')
+        break;
+      if (lastsep==',')
+        error(Q);
+      if (a1==0) {
+        a1 = zero+1;
+        if (a1>dol)
+          a1--;
+      }
       addr1 = a1;
+      if (c==';')
+        dot = a1;
     }
-    if (lastsep==';')
-      addr1 = a1;
-    printcom();
-    continue;
-
-  case 'l':
-    listf++;
-  case 'p':
-  case 'P':
-    newline();
-    printcom();
-    continue;
-
-  case 'Q':
-    fchange = 0;
-  case 'q':
-    setnoaddr();
-    newline();
-    quit();
-
-  case 'r':
-    filename(c);
-  caseread:
-    if ((io = open((char *)utf8(file), O_RDONLY)) < 0) {
-      lastc = '\n';
-      error(file);
+    if (lastsep!='\n' && a1==0)
+      a1 = dol;
+    if ((addr2=a1)==0) {
+      given = 0;
+      addr2 = dot;  
     }
-    setwide();
-    squeeze(0);
-    uioinitrd(io,uio);
-    c = zero != dol;
-    append(getfile, addr2);
-    exfile();
-    fchange = c;
-    continue;
-
-  case 's':
-    nonzero();
-    substitute(globp!=0);
-    continue;
-
-  case 't':
-    move(1);
-    continue;
-
-  case 'u':
-    nonzero();
-    newline();
-    if ((*addr2&~01) != subnewa)
-      error(Q);
-    *addr2 = subolda;
-    dot = addr2;
-    continue;
-
-  case 'v':
-    global(0);
-    continue;
-
-  case 'W':
-    wrapp++;
-  case 'w':
-    setwide();
-    squeeze(dol>zero);
-    if ((temp = getchr()) != 'q' && temp != 'Q') {
-      peekc = temp;
-      temp = 0;
-    }
-    filename(c);
-    FMODE= O_WRONLY | O_CREAT;
-    if(wrapp)
-      FMODE |= O_APPEND;
     else
-      FMODE |= O_TRUNC;
-    if((io=open((char*)utf8(file), FMODE, 0666)) == -1)
-      error(file);
-    uioinit(io,uio);
-    wrapp = 0;
-    if (dol > zero)
-      putfile();
-    uioflush(uio);
-    exfile();
-    if (addr1<=zero+1 && addr2==dol)
+      given = 1;
+    if (addr1==0)
+      addr1 = addr2;
+    switch(c) {
+  
+    case 'a':
+      add(0);
+      continue;
+  
+    case 'b':
+      nonzero();
+      browse();
+      continue;
+  
+    case 'c':
+      nonzero();
+      newline();
+      rdelete(addr1, addr2);
+      append(gettty, addr1-1);
+      continue;
+  
+    case 'd':
+      nonzero();
+      newline();
+      rdelete(addr1, addr2);
+      continue;
+  
+    case 'E':
       fchange = 0;
-    if (temp == 'Q')
+      c = 'e';
+    case 'e':
+      setnoaddr();
+      if (vflag && fchange) {
+        fchange = 0;
+        error(Q);
+      }
+      filename(c);
+      init();
+      addr2 = zero;
+      goto caseread;
+  
+    case 'f':
+      setnoaddr();
+      filename(c);
+      putst(savedfile);
+      continue;
+  
+    case 'g':
+      global(1);
+      continue;
+  
+    case 'i':
+      add(-1);
+      continue;
+  
+    case 'j':
+      if (!given)
+        addr2++;
+      newline();
+      join();
+      continue;
+  
+    case 'k':
+      nonzero();
+      if ((c = getchr()) < 'a' || c > 'z')
+        error(Q);
+      newline();
+      names[c-'a'] = unmark(*addr2);
+      anymarks = mark(anymarks);
+      continue;
+  
+    case 'm':
+      move(0);
+      continue;
+  
+    case 'n':
+      listn++;
+      newline();
+      printcom();
+      continue;
+  
+    case '\n':
+      if (a1==0) {
+        a1 = dot+1;
+        addr2 = a1;
+        addr1 = a1;
+      }
+      if (lastsep==';')
+        addr1 = a1;
+      printcom();
+      continue;
+  
+    case 'l':
+      listf++;
+    case 'p':
+    case 'P':
+      newline();
+      printcom();
+      continue;
+  
+    case 'Q':
       fchange = 0;
-    if (temp)
+    case 'q':
+      setnoaddr();
+      newline();
       quit();
-    continue;
-
-  case '=':
-    setwide();
-    squeeze(0);
-    newline();
-    count = addr2 - zero;
-    putd();
-    putchr('\n');
-    continue;
-
-  case '!':
-    callunix();
-    continue;
-
-  case EOF:
-    return;
-
-  }
-  error(Q);
+  
+    case 'r':
+      filename(c);
+    caseread:
+      if ((io = open((char *)utf8(file), O_RDONLY)) < 0) {
+        lastc = '\n';
+        error(file);
+      }
+      setwide();
+      squeeze(0);
+      uioinitrd(io,uio);
+      c = zero != dol;
+      append(getfile, addr2);
+      exfile();
+      fchange = c;
+      continue;
+  
+    case 's':
+      nonzero();
+      substitute(globp!=0);
+      continue;
+  
+    case 't':
+      move(1);
+      continue;
+  
+    case 'u':
+      nonzero();
+      newline();
+      if ((*addr2&~01) != subnewa)
+        error(Q);
+      *addr2 = subolda;
+      dot = addr2;
+      continue;
+  
+    case 'v':
+      global(0);
+      continue;
+  
+    case 'W':
+      wrapp++;
+    case 'w':
+      setwide();
+      squeeze(dol>zero);
+      if ((temp = getchr()) != 'q' && temp != 'Q') {
+        peekc = temp;
+        temp = 0;
+      }
+      filename(c);
+      FMODE= O_WRONLY | O_CREAT;
+      if(wrapp)
+        FMODE |= O_APPEND;
+      else
+        FMODE |= O_TRUNC;
+      if((io=open((char*)utf8(file), FMODE, 0666)) == -1)
+        error(file);
+      uioinit(io,uio);
+      wrapp = 0;
+      if (dol > zero)
+        putfile();
+      uioflush(uio);
+      exfile();
+      if (addr1<=zero+1 && addr2==dol)
+        fchange = 0;
+      if (temp == 'Q')
+        fchange = 0;
+      if (temp)
+        quit();
+      continue;
+  
+    case '=':
+      setwide();
+      squeeze(0);
+      newline();
+      count = addr2 - zero;
+      putd();
+      putchr('\n');
+      continue;
+  
+    case '!':
+      callunix();
+      continue;
+  
+    case EOF:
+      return;
+  
+    }
+    error(Q);
   }
 }
 
@@ -954,11 +954,29 @@ callunix(void)
   void (*savint)(int);
   int retcode;
 
+  const int uxsize=512;
+  char unixbuf[uxsize];
+  int c;
+
+  unixbuf[0]='\0';
+
   setnoaddr();
   if ((pid = fork()) == 0) {
+    for(c=0;c<uxsize;c++) {
+      if(read(0,&unixbuf[c],1)<=0)
+        error(SHRIEK);
+      if(unixbuf[c]=='\n') 
+        break;
+    }
+    if(unixbuf[c]!='\n')
+      error(SHRIEK);
+    unixbuf[c]='\0';
     signal(SIGHUP, oldhup);
     signal(SIGQUIT, oldquit);
-    execl("/bin/sh", "sh", (char *)NULL);
+    if(*unixbuf)
+      execl("/bin/sh", "sh", "-c", unixbuf, (char *)NULL);
+    else
+      execl("/bin/sh", "sh", (char *)NULL);
     bye(0100);
   }
   savint = signal(SIGINT, SIG_IGN);
