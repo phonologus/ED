@@ -20,6 +20,8 @@
 #define unmark(n) ((n)&UNMARK)
 #define marked(n) ((n)&MARK)
 
+typedef long addr_t;
+
 enum {
   FNSIZE = 512,
   LBSIZE = 4096,
@@ -27,7 +29,8 @@ enum {
   BLKBSIZE = (BLKSIZE << 2),    /* # of bytes in a BLK */
   ESIZE = 256,
   GBSIZE = 256,
-  NBRA = 9
+  NBRA = 9,
+  NUMNAMES = 26
 };
 
 enum {
@@ -87,12 +90,12 @@ int  linebuf[LBSIZE];
 int  rhsbuf[LBSIZE/2];
 int  expbuf[ESIZE+4];
 int  genbuf[LBSIZE];
-long  *zero;
-long  *dot;
-long  *dol;
+long  *core;
+addr_t  dot;
+addr_t  dol;
+addr_t  addr1;
+addr_t  addr2;
 int  given;
-long  *addr1;
-long  *addr2;
 long  count;
 int  *linebp;
 int  io;
@@ -118,7 +121,7 @@ int  obuff[BLKSIZE];
 int  oblock  = -1;
 int  ichanged;
 int  nleft;
-long  names[26];
+long  names[NUMNAMES];
 int  anymarks;
 int  *braslist[NBRA];
 int  *braelist[NBRA];
@@ -128,10 +131,10 @@ int  subolda;
 int  fchange;
 int  wrapp;
 int  bpagesize = 20;
-unsigned int nlall = 128;
+int  nlall = 1024;
 jmp_buf  savej;
 
-long*  address(void);
+addr_t  address(void);
 int  getchr(void);
 int*  getline(long);
 int*  getblock(long, int);
@@ -143,7 +146,7 @@ void  bye(int);
 void  error(int*);
 void  nonzero(void);
 void  newline(void);
-void  rdelete(long*, long*);
+void  rdelete(addr_t, addr_t);
 void  setnoaddr(void);
 void  init(void);
 void  putst(int*);
@@ -154,10 +157,10 @@ void  putfile(void);
 void  putd(void);
 void  callunix(void);
 void  dosub(void);
-void  reverse(long*, long*);
+void  reverse(addr_t, addr_t);
 void  compile(int);
 void  putchr(int);
-long  append(int(*)(void), long*);
+long  append(int(*)(void), addr_t);
 void  add(int);
 void  browse(void);
 void  filename(int);
@@ -172,7 +175,7 @@ int  compsub(void);
 int  getsub(void);
 int  getcopy(void);
 int  getnum(void);
-int  execute(long*);
+int  execute(addr_t);
 int  putline(void);
 int  advance(int*, int*);
 int  cclass(int*, int, int);
@@ -226,7 +229,7 @@ main(int argc, char *argv[])
         p2--;
     globp = R;
   }
-  if((zero = (long*)malloc(nlall*sizeof(long)))==NULL) {
+  if((core = (long *)malloc(nlall*sizeof(long)))==NULL) {
     error(M);
     onhup(0);
   }
@@ -244,7 +247,7 @@ main(int argc, char *argv[])
 void
 commands(void)
 {
-  long *a1;
+  addr_t a1;
   int c, temp;
   int lastsep;
 
@@ -264,7 +267,7 @@ commands(void)
       if (lastsep==',')
         error(Q);
       if (a1==0) {
-        a1 = zero+1;
+        a1 = 1;
         if (a1>dol)
           a1--;
       }
@@ -317,7 +320,7 @@ commands(void)
       }
       filename(c);
       init();
-      addr2 = zero;
+      addr2 = 0;
       goto caseread;
   
     case 'f':
@@ -346,7 +349,7 @@ commands(void)
       if ((c = getchr()) < 'a' || c > 'z')
         error(Q);
       newline();
-      names[c-'a'] = unmark(*addr2);
+      names[c-'a'] = unmark(core[addr2]);
       anymarks = mark(anymarks);
       continue;
   
@@ -396,7 +399,7 @@ commands(void)
       setwide();
       squeeze(0);
       uioinitrd(io,uio);
-      c = zero != dol;
+      c = 0 != dol;
       append(getfile, addr2);
       exfile();
       fchange = c;
@@ -414,9 +417,9 @@ commands(void)
     case 'u':
       nonzero();
       newline();
-      if ((*addr2&~01) != subnewa)
+      if ((core[addr2]&~01) != subnewa)
         error(Q);
-      *addr2 = subolda;
+      core[addr2] = subolda;
       dot = addr2;
       continue;
   
@@ -428,7 +431,7 @@ commands(void)
       wrapp++;
     case 'w':
       setwide();
-      squeeze(dol>zero);
+      squeeze(dol>0);
       if ((temp = getchr()) != 'q' && temp != 'Q') {
         peekc = temp;
         temp = 0;
@@ -443,11 +446,11 @@ commands(void)
         error(file);
       uioinit(io,uio);
       wrapp = 0;
-      if (dol > zero)
+      if (dol > 0)
         putfile();
       uioflush(uio);
       exfile();
-      if (addr1<=zero+1 && addr2==dol)
+      if (addr1<=1 && addr2==dol)
         fchange = 0;
       if (temp == 'Q')
         fchange = 0;
@@ -459,7 +462,7 @@ commands(void)
       setwide();
       squeeze(0);
       newline();
-      count = addr2 - zero;
+      count = addr2;
       putd();
       putchr('\n');
       continue;
@@ -479,17 +482,17 @@ commands(void)
 void
 printcom(void)
 {
-  long *a1;
+  addr_t a1;
 
   nonzero();
   a1 = addr1;
   do {
     if (listn) {
-      count = a1-zero;
+      count = a1;
       putd();
       putchr('\t');
     }
-    putst(getline(*a1++));
+    putst(getline(core[a1++]));
   } while (a1 <= addr2);
   dot = addr2;
   listf = 0;
@@ -497,11 +500,11 @@ printcom(void)
   pflag = 0;
 }
 
-long*
+addr_t
 address(void)
 {
   int sign, opcnt, nextopand, c;
-  long *a, *b;
+  addr_t a, b;
 
   nextopand = -1;
   sign = 1;
@@ -512,7 +515,7 @@ address(void)
     if ('0'<=c && c<='9') {
       peekc = c;
       if (!opcnt)
-        a = zero;
+        a = 0;
       a += sign*getnum();
     } else switch (c) {
     case '$':
@@ -526,8 +529,8 @@ address(void)
       c = getchr();
       if (opcnt || c<'a' || 'z'<c)
         error(Q);
-      a = zero;
-      do a++; while (a<=dol && names[c-'a']!=(*a&~01));
+      a = 0;
+      do a++; while (a<=dol && names[c-'a']!=(core[a]&~01));
       break;
     case '?':
       sign = -sign;
@@ -537,10 +540,10 @@ address(void)
       b = a;
       for (;;) {
         a += sign;
-        if (a<=zero)
+        if (a<=0)
           a = dol;
         if (a>dol)
-          a = zero;
+          a = 0;
         if (execute(a))
           break;
         if (a==b)
@@ -550,7 +553,7 @@ address(void)
     default:
       if (nextopand == opcnt) {
         a += sign;
-        if (a<zero || dol<a)
+        if (a<0 || dol<a)
           continue;       /* error(Q); */
       }
       if (c!='+' && c!='-' && c!='^') {
@@ -567,7 +570,7 @@ address(void)
     }
     sign = 1;
     opcnt++;
-  } while (zero<=a && a<=dol);
+  } while (0<=a && a<=dol);
   error(Q);
   return 0;
 }
@@ -588,7 +591,7 @@ void
 setwide(void)
 {
   if (!given) {
-    addr1 = zero + (dol>zero);
+    addr1 = (dol>0);
     addr2 = dol;
   }
 }
@@ -609,7 +612,7 @@ nonzero(void)
 void
 squeeze(int i)
 {
-  if (addr1<zero+i || addr2>dol || addr1>addr2)
+  if (addr1<i || addr2>dol || addr1>addr2)
     error(Q);
 }
 
@@ -695,8 +698,8 @@ onhup(int sig)
 {
   signal(SIGINT, SIG_IGN);
   signal(SIGHUP, SIG_IGN);
-  if (dol > zero) {
-    addr1 = zero+1;
+  if (dol > 0) {
+    addr1 = 1;
     addr2 = dol;
     io = open("ed.hup", O_WRONLY | O_TRUNC | O_CREAT, 0600);
     if (io > 0) {
@@ -850,13 +853,13 @@ getfile(void)
 void
 putfile(void)
 {
-  long *a1;
+  addr_t a1;
   int c;
   int *lp;
 
   a1 = addr1;
   do {
-    lp = getline(*a1++);
+    lp = getline(core[a1++]);
     for (;;) {
       count++;
       if ((c = *lp++) == 0) {
@@ -871,22 +874,20 @@ putfile(void)
 }
 
 long
-append(int (*f)(void), long *a)
+append(int (*f)(void), addr_t a)
 {
-  long *a1, *a2, *rdot, *ozero, nline, tl;
+  long nline, tl;
+  addr_t a1, a2, rdot;
 
   nline = 0;
   dot = a;
   while ((*f)() == 0) {
-    if ((dol-zero)+1 >= nlall) {
-      ozero = zero;
-      nlall += 1024;
-      if ((zero = (long *)realloc((void *)zero, nlall*sizeof(long)))==NULL) {
+    if ((dol+1) >= nlall) {
+      nlall *= 2;
+      if ((core = (long *)realloc((void *)core, nlall*sizeof(long)))==NULL) {
         error(M);
         onhup(0);
       }
-      dot += zero - ozero;
-      dol += zero - ozero;
     }
     tl = putline();
     nline++;
@@ -894,8 +895,8 @@ append(int (*f)(void), long *a)
     a2 = a1+1;
     rdot = ++dot;
     while (a1 > rdot)
-      *--a2 = *--a1;
-    *rdot = tl;
+      core[--a2] = core[--a1];
+    core[rdot] = tl;
   }
   return nline;
 }
@@ -903,7 +904,7 @@ append(int (*f)(void), long *a)
 void
 add(int i)
 {
-  if (i && (given || dol>zero)) {
+  if (i && (given || dol>0)) {
     addr1--;
     addr2--;
   }
@@ -941,8 +942,8 @@ browse(void)
     if((addr2+=bpagesize) > dol)
       addr2 = dol;
   } else {
-    if((addr1=addr2-bpagesize) <= zero)
-      addr1 = zero+1;
+    if((addr1=addr2-bpagesize) <= 0)
+      addr1 = 1;
   }
   printcom();
 }
@@ -991,7 +992,7 @@ callunix(void)
 void
 quit(void)
 {
-  if (vflag && fchange && dol!=zero) {
+  if (vflag && fchange && dol!=0) {
     fchange = 0;
     error(Q);
   }
@@ -1002,7 +1003,7 @@ void
 bye(int e)
 {
   unlink(tfname);
-  free(zero);
+  free(core);
   exit(e);
 }
 
@@ -1013,16 +1014,16 @@ onquit(int sig)
 }
 
 void
-rdelete(long *ad1, long *ad2)
+rdelete(addr_t ad1, addr_t ad2)
 {
-  long *a1, *a2, *a3;
+  addr_t a1, a2, a3;
 
   a1 = ad1;
   a2 = ad2+1;
   a3 = dol;
   dol -= a2 - a1;
   do {
-    *a1++ = *a2++;
+    core[a1++] = core[a2++];
   } while (a2 <= a3);
   a1 = ad1;
   if (a1 > dol)
@@ -1034,18 +1035,18 @@ rdelete(long *ad1, long *ad2)
 void
 gdelete(void)
 {
-  long *a1, *a2, *a3;
+  addr_t a1, a2, a3;
 
   a3 = dol;
-  for (a1=zero; (*a1&01)==0; a1++)
+  for (a1=0; (core[a1]&01)==0; a1++)
     if (a1>=a3)
       return;
   for (a2=a1+1; a2<=a3;) {
-    if (*a2&01) {
+    if (core[a2]&01) {
       a2++;
       dot = a1;
     } else
-      *a1++ = *a2++;
+      core[a1++] = core[a2++];
   }
   dol = a1-1;
   if (dot>dol)
@@ -1147,7 +1148,7 @@ getblock(long atl, int iof)
 void
 init(void)
 {
-  long *markp;
+  int i;
   char *a, *b;
 
   close(tfile);
@@ -1162,14 +1163,14 @@ init(void)
     error(T);
 
   tline = 2;
-  for (markp = names; markp < &names[26]; )
-    *markp++ = 0;
+  for(i=0;i<NUMNAMES;i++)
+    names[i] = 0;
   subnewa = 0;
   anymarks = 0;
   iblock = -1;
   oblock = -1;
   ichanged = 0;
-  dot = dol = zero;
+  dot = dol = 0;
 }
 
 void
@@ -1177,12 +1178,12 @@ global(int k)
 {
   int *gp, globuf[GBSIZE];
   int c;
-  long *a1;
+  addr_t a1;
 
   if (globp)
     error(Q);
   setwide();
-  squeeze(dol>zero);
+  squeeze(dol>0);
   if ((c=getchr())=='\n')
     error(Q);
   compile(c);
@@ -1203,10 +1204,10 @@ global(int k)
     *gp++ = 'p';
   *gp++ = '\n';
   *gp = 0;
-  for (a1=zero; a1<=dol; a1++) {
-    *a1 = unmark(*a1);
+  for (a1=0; a1<=dol; a1++) {
+    core[a1] = unmark(core[a1]);
     if (a1>=addr1 && a1<=addr2 && execute(a1)==k)
-      *a1 = mark(*a1);
+      core[a1] = mark(core[a1]);
   }
   /*
    * Special case: g/.../d (avoid n^2 algorithm)
@@ -1215,13 +1216,13 @@ global(int k)
     gdelete();
     return;
   }
-  for (a1=zero; a1<=dol; a1++) {
-    if (marked(*a1)) {
-      *a1 = unmark(*a1);
+  for (a1=0; a1<=dol; a1++) {
+    if (marked(core[a1])) {
+      core[a1] = unmark(core[a1]);
       dot = a1;
       globp = globuf;
       commands();
-      a1 = zero;
+      a1 = 0;
     }
   }
 }
@@ -1230,12 +1231,12 @@ void
 join(void)
 {
   int *gp, *lp;
-  long *a1;
+  addr_t a1;
 
   nonzero();
   gp = genbuf;
   for (a1=addr1; a1<=addr2; a1++) {
-    lp = getline(*a1);
+    lp = getline(core[a1]);
     while ((*gp = *lp++))
       if (gp++ >= &genbuf[LBSIZE-2])
         error(Q);
@@ -1244,7 +1245,7 @@ join(void)
   gp = genbuf;
   while ((*lp++ = *gp++))
     ;
-  *addr1 = putline();
+  core[addr1] = putline();
   if (addr1 < addr2)
     rdelete(addr1+1, addr2);
   dot = addr1;
@@ -1253,7 +1254,9 @@ join(void)
 void
 substitute(int inglob)
 {
-  long *mp, *a1, nl, *ozero; 
+  addr_t a1;
+  int mp;
+  long nl; 
   int gsubf, m, n;
 
   n = getnum();  /* OK even if n==0 */
@@ -1274,21 +1277,19 @@ substitute(int inglob)
             loc2++;
           }
         }
-      } while (execute((long*)0));
+      } while (execute(0));
       if (m <= 0) {
         inglob = mark(inglob);
         subnewa = putline();
-        *a1 = unmark(*a1);
+        core[a1] = unmark(core[a1]);
         if (anymarks) {
-          for (mp = names; mp < &names[26]; mp++)
-            if (*mp == *a1)
-              *mp = subnewa;
+          for (mp = 0; mp < NUMNAMES; mp++)
+            if (names[mp] == core[a1])
+              names[mp] = subnewa;
         }
-        subolda = *a1;
-        *a1 = subnewa;
-        ozero = zero;
+        subolda = core[a1];
+        core[a1] = subnewa;
         nl = append(getsub, a1);
-        nl += zero-ozero;
         a1 += nl;
         addr2 += nl;
       }
@@ -1400,7 +1401,7 @@ place(int *sp, int *l1, int *l2)
 void
 move(int cflag)
 {
-  long *adt, *ad1, *ad2, *ozero, delta;
+  addr_t adt, ad1, ad2;
 
   nonzero();
   if ((adt = address())==0)  /* address() guarantees addr is in range */
@@ -1408,16 +1409,12 @@ move(int cflag)
   newline();
   if (cflag) {
     ad1 = dol;
-    ozero = zero;
     append(getcopy, ad1++);
     ad2 = dol;
-    delta = zero - ozero;
-    ad1 += delta;
-    adt += delta;
   } else {
     ad2 = addr2;
     for (ad1 = addr1; ad1 <= ad2;) {
-      *ad1=unmark(*ad1);
+      core[ad1]=unmark(core[ad1]);
       ad1++;
     }
     ad1 = addr1;
@@ -1441,16 +1438,16 @@ move(int cflag)
 }
 
 void
-reverse(long *a1, long *a2)
+reverse(addr_t a1, addr_t a2)
 {
   long t;
 
   for (;;) {
-    t = *--a2;
+    t = core[--a2];
     if (a2 <= a1)
       return;
-    *a2 = *a1;
-    *a1++ = t;
+    core[a2] = core[a1];
+    core[a1++] = t;
   }
 }
 
@@ -1459,7 +1456,7 @@ getcopy(void)
 {
   if (addr1 > addr2)
     return EOF;
-  getline(*addr1++);
+  getline(core[addr1++]);
   return 0;
 }
 
@@ -1602,7 +1599,7 @@ compile(int eof)
 }
 
 int
-execute(long *addr)
+execute(addr_t addr)
 {
   int *p1, *p2;
   int c;
@@ -1612,14 +1609,14 @@ execute(long *addr)
     braelist[c] = 0;
   }
   p2 = expbuf;
-  if (addr == (long*)0) {
+  if (addr == 0) {
     if (*p2 == CCIRC)
       return 0;
     p1 = loc2;
   } else {
-    if (addr == zero)
+    if (addr == 0)
       return 0;
-    p1 = getline(*addr);
+    p1 = getline(core[addr]);
   }
   if (*p2 == CCIRC) {
     loc1 = p1;
